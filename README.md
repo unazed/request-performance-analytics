@@ -11,6 +11,8 @@ is expected.
 Additionally, CPU affinity masks are set for each process as to attempt to run individually on each core, as to whether or not this increases performance is contentious; as it appears without CPU affinity masking, receiving
 tends to be faster, but sending slower, though I can't reason as to why this is true.
 
+In a hopeful attempt to optimize the `send()`/`recv()` calls, the program will attempt to set its own scheduler policy to Round Robin with the maximum priority on each spawned process, and then dependent on whichever process finishes whichever I/O intensive part first, will relinquish itself to other processes and maximize their throughput, and finally set its own priority to the lowest past the point where all intensive code is finished.
+
 # Run
 
 Tested on CPython 3.9.0/GCC 10.2.0, Linux 5.10.15, the only proprietary module needed is `numpy` (for standard deviation, though not entirely necessary.) As is, the code couples with `http_netstat.py`, so run `http_netstat.py` first, and then separately `proc_main.py`, momentarily upon which a result like such will be displayed:
