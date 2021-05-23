@@ -30,6 +30,11 @@ def worker(master: multiprocessing.Pipe, request_method: Callable,
 
     os.sched_setaffinity(0, {affinity})
     
+    try:
+        os.sched_setscheduler(0, os.SCHED_RR, os.sched_param(99))
+    except PermissionError:
+        print(f"({timestamp()}) not running as rootuser, scheduler not modified")
+
     sockfd = connect_socket(*addr_tup)
     sockfd.setblocking(is_blocking)
     
@@ -42,14 +47,17 @@ def worker(master: multiprocessing.Pipe, request_method: Callable,
             nsent += 1
             times.append(time.time_ns() - start)
         except (EOFError, BrokenPipeError, ConnectionResetError):
+            os.sched_yield()
             sockfd = connect_socket(*addr_tup)
 
+    os.sched_yield()
     recv_times = []
     norm_recv_times = []
 
     data = b""
     sockfd.setblocking(False)
     last = time.time()
+
     while 1:
         try:
             start = time.time_ns()
@@ -57,23 +65,35 @@ def worker(master: multiprocessing.Pipe, request_method: Callable,
             recv_times.append(time.time_ns() - start)
             last = time.time()    
         except BlockingIOError:
-            if time.time() - last > 0.5:
+            if time.time() - last > 2:
                 break
             continue
         if not recv:
             break
         data += recv
+
     sockfd.close()
+    os.sched_yield()
 
     std = numpy.std(times)
     std_recv = numpy.std(recv_times)
 
-    mean = sum(times) / len(times)
-    mean_recv = sum(recv_times) / len(recv_times)
+    try:
+        mean = sum(times) / len(times)
+        mean_recv = sum(recv_times) / len(recv_times)
+    except ZeroDivisionError:
+        print(f"({timestamp()}) failed to aggregate send()/recv() buffer(s), likely because "
+               "scheduler priority or recv() timeout was too little")
+        return
+
+    os.sched_yield()
+    os.sched_setparam(0, os.sched_param(1))
 
     for time_ in times:
         if mean - 2 * std <= time_ <= mean + 2 * std:
             norm_times.append(time_)
+
+    os.sched_yield()
 
     for recv_time in recv_times:
         if mean_recv - 2 * std_recv <= recv_time <= mean_recv + 2 * std_recv:
