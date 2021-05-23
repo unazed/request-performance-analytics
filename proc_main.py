@@ -33,7 +33,8 @@ def worker(master: multiprocessing.Pipe, request_method: Callable,
     try:
         os.sched_setscheduler(0, os.SCHED_RR, os.sched_param(99))
     except PermissionError:
-        print(f"({timestamp()}) not running as rootuser, scheduler not modified")
+        print(f"({timestamp()}) not running as root-user, scheduler opt. unavailable")
+        return
 
     sockfd = connect_socket(*addr_tup)
     sockfd.setblocking(is_blocking)
@@ -99,6 +100,8 @@ def worker(master: multiprocessing.Pipe, request_method: Callable,
         if mean_recv - 2 * std_recv <= recv_time <= mean_recv + 2 * std_recv:
             norm_recv_times.append(recv_time)
 
+    os.sched_yield()
+
     master.send({
         "send": {
             "mean": (sum(norm_times) / len(norm_times)) / 1e3,  # us
@@ -155,7 +158,7 @@ def start_polling(pool: list) -> None:
     for id_, proc_info in pool.items():
         print(f"({timestamp()}) starting proc. id: {id_}")
         proc_info['proc'].start()
-    print(f"({timestamp()}) beginning polling for events")
+    print(f"({timestamp()}) setting lowest priority, beginning polling for events")
     
     total_recv_rps = 0
     total_send_rps = 0
@@ -186,9 +189,16 @@ def start_polling(pool: list) -> None:
     print(f"in total: req. p/s: {total_send_rps:.2f}, recv. p/s: {total_recv_rps:.2f}, send/recv. ratio: "
             f"{total_send_rps/total_recv_rps:.2f}:1")
 
+    return total_send_rps, total_recv_rps
+
 
 if __name__ == "__main__":
-    proc_pool = create_process_pool(
-            amount=multiprocessing.cpu_count()
-            )
-    start_polling(proc_pool)
+    data = []
+
+    for n in range(1, 11):
+        proc_pool = create_process_pool(
+                amount=n
+                )
+        data.append(start_polling(proc_pool))
+
+    print(data)
