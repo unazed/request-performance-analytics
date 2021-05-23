@@ -8,6 +8,9 @@ though in total the calculated data length amounted to the total expected, but o
 protocols (e.g. HTTP) delimitation is done using CRLFs and `Content-Length` headers, so data integrity
 is expected.
 
+Additionally, CPU affinity masks are set for each process as to attempt to run individually on each core, as to whether or not this increases performance is contentious; as it appears without CPU affinity masking, receiving
+tends to be faster, but sending slower, though I can't reason as to why this is true.
+
 # Run
 
 Tested on CPython 3.9.0/GCC 10.2.0, Linux 5.10.15, the only proprietary module needed is `numpy` (for standard deviation, though not entirely necessary.) As is, the code couples with `http_netstat.py`, so run `http_netstat.py` first, and then separately `proc_main.py`, momentarily upon which a result like such will be displayed:
