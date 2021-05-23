@@ -12,6 +12,7 @@ Additionally, CPU affinity masks are set for each process as to attempt to run i
 tends to be faster, but sending slower, though I can't reason as to why this is true.
 
 In a hopeful attempt to optimize the `send()`/`recv()` calls, the program will attempt to set its own scheduler policy to Round Robin with the maximum priority on each spawned process, and then dependent on whichever process finishes whichever I/O intensive part first, will relinquish itself to other processes and maximize their throughput, and finally set its own priority to the lowest past the point where all intensive code is finished.
+I've noticed that `recv()` tends to be upwards of 200,000 calls quicker with this optimization, though it fluctuates.
 
 # Run
 
