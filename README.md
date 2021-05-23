@@ -7,3 +7,50 @@ that, on average, about ten packets more were sent than originally intended, lik
 though in total the calculated data length amounted to the total expected, but of course with higher layer
 protocols (e.g. HTTP) delimitation is done using CRLFs and `Content-Length` headers, so data integrity
 is expected.
+
+# Run
+
+Tested on CPython 3.9.0/GCC 10.2.0, Linux 5.10.15, the only proprietary module needed is `numpy` (for standard deviation, though not entirely necessary.) As is, the code couples with `http_netstat.py`, so run `http_netstat.py` first, and then separately `proc_main.py`, momentarily upon which a result like such will be displayed:
+
+## `http_netstat.py`
+
+```
+======== Running on http://0.0.0.0:8080 ========
+(Press CTRL+C to quit)
+2048 requests
+```
+
+## `proc_main.py`
+
+```
+(21:35:54) starting proc. id: 0
+(21:35:54) starting proc. id: 1
+(21:35:54) starting proc. id: 2
+(21:35:54) starting proc. id: 3
+(21:35:54) beginning polling for events
+(21:35:56) proc. id: 0, CPU core #3 finished:
+send:	mean: 1.5712 us, min.: 1.4070 us, max.: 5.4210 us
+		std. dev.: 0.3619 us, req. p/s: 636436.37
+recv:	mean: 6.8867 us, min.: 1.7420 us, max.: 21.8410 us
+		std. dev.: 3.4356 us, recv. p/s: 145206.53, # bytes: 1654272
+
+(21:35:56) proc. id: 1, CPU core #0 finished:
+send:	mean: 1.5351 us, min.: 1.3840 us, max.: 4.4420 us
+		std. dev.: 0.2065 us, req. p/s: 651410.82
+recv:	mean: 8.0715 us, min.: 1.6030 us, max.: 70.5410 us
+		std. dev.: 6.4461 us, recv. p/s: 123892.43, # bytes: 1654272
+
+(21:35:56) proc. id: 2, CPU core #1 finished:
+send:	mean: 1.5096 us, min.: 1.4020 us, max.: 3.0650 us
+		std. dev.: 0.1390 us, req. p/s: 662427.31
+recv:	mean: 7.3783 us, min.: 1.6820 us, max.: 60.3470 us
+		std. dev.: 5.5217 us, recv. p/s: 135533.04, # bytes: 1654272
+
+(21:35:56) proc. id: 3, CPU core #2 finished:
+send:	mean: 1.5269 us, min.: 1.4230 us, max.: 4.2720 us
+		std. dev.: 0.2025 us, req. p/s: 654911.04
+recv:	mean: 6.6806 us, min.: 1.7450 us, max.: 20.1840 us
+		std. dev.: 3.3611 us, recv. p/s: 149687.29, # bytes: 1654272
+
+in total: req. p/s: 2605185.53, recv. p/s: 554319.29, send/recv. ratio: 4.70:1
+```
